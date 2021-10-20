@@ -459,6 +459,7 @@ Vagrant.configure('2') do |config|
   config.vm.provider :docker do |d|
     d.image = 'pentatonicfunk/vagrant-ubuntu-base-images:20.04'
     d.has_ssh = true
+    puts "Checking platform: #{Vagrant::Util::Platform.platform} "
     if VOS.mac?
         # Docker in mac need explicit ports publish to access
         # before provision `sudo ifconfig lo0 alias 192.168.50.4/24`
@@ -889,6 +890,21 @@ Vagrant.configure('2') do |config|
         end
       end
     end
+  end
+
+  config.trigger.before :up do |trigger|
+    trigger.name = "VVV Setup local network before up"
+    trigger.run = {inline: "bash -c 'sudo ifconfig lo0 alias #{vvv_config['vm_config']['private_network_ip']}/24'"}
+  end
+  config.trigger.after :halt do |trigger|
+    trigger.name = 'VVV delete local network after halt'
+    trigger.run_remote = {inline: "bash -c 'sudo ifconfig lo0 inet delete #{vvv_config['vm_config']['private_network_ip']}'"}
+    trigger.on_error = :continue
+  end
+  config.trigger.after :destroy do |trigger|
+    trigger.name = 'VVV delete local network after destroy'
+    trigger.run = {inline: "bash -c 'sudo ifconfig lo0 inet delete #{vvv_config['vm_config']['private_network_ip']}'"}
+    trigger.on_error = :continue
   end
 
   config.trigger.after :up do |trigger|
