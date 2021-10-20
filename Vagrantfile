@@ -872,7 +872,8 @@ Vagrant.configure('2') do |config|
     end
   end
 
-  if Vagrant::Util::Platform.platform == 'darwin19' && config.vm.provider == 'docker'
+  # specific trigger for mac and docker
+  if Vagrant::Util::Platform.platform == 'darwin19' && vvv_config['vm_config']['provider'] == 'docker'
     config.trigger.before :up do |trigger|
       trigger.name = "VVV Setup docker local network before up"
       trigger.run = {inline: "bash -c 'sudo ifconfig lo0 alias #{vvv_config['vm_config']['private_network_ip']}/24'"}
