@@ -72,25 +72,6 @@ end
 show_logo = true if %w[up resume status provision reload].include? ARGV[0]
 show_logo = false if ENV['VVV_SKIP_LOGO']
 
-# OS Detection
-module VOS
-    def VOS.windows?
-        (/cygwin|mswin|mingw|bccwin|wince|emx/ =~ RUBY_PLATFORM) != nil
-    end
-
-    def VOS.mac?
-        (/darwin/ =~ RUBY_PLATFORM) != nil
-    end
-
-    def VOS.unix?
-        !VOS.windows?
-    end
-
-    def VOS.linux?
-        VOS.unix? and not VOS.mac?
-    end
-end
-
 # Show the initial splash screen
 if show_logo
   git_or_zip = 'zip-no-vcs'
@@ -460,9 +441,8 @@ Vagrant.configure('2') do |config|
     d.image = 'pentatonicfunk/vagrant-ubuntu-base-images:20.04'
     d.has_ssh = true
     puts "Checking platform: #{Vagrant::Util::Platform.platform} "
-    if VOS.mac?
+    if Vagrant::Util::Platform.platform == 'darwin19'
         # Docker in mac need explicit ports publish to access
-        # before provision `sudo ifconfig lo0 alias 192.168.50.4/24`
         d.ports = [ "#{vvv_config['vm_config']['private_network_ip']}:80:80" ]
         d.ports += [ "#{vvv_config['vm_config']['private_network_ip']}:443:443" ]
         d.ports += [ "#{vvv_config['vm_config']['private_network_ip']}:3306:3306" ]
@@ -892,19 +872,21 @@ Vagrant.configure('2') do |config|
     end
   end
 
-  config.trigger.before :up do |trigger|
-    trigger.name = "VVV Setup local network before up"
-    trigger.run = {inline: "bash -c 'sudo ifconfig lo0 alias #{vvv_config['vm_config']['private_network_ip']}/24'"}
-  end
-  config.trigger.after :halt do |trigger|
-    trigger.name = 'VVV delete local network after halt'
-    trigger.run_remote = {inline: "bash -c 'sudo ifconfig lo0 inet delete #{vvv_config['vm_config']['private_network_ip']}'"}
-    trigger.on_error = :continue
-  end
-  config.trigger.after :destroy do |trigger|
-    trigger.name = 'VVV delete local network after destroy'
-    trigger.run = {inline: "bash -c 'sudo ifconfig lo0 inet delete #{vvv_config['vm_config']['private_network_ip']}'"}
-    trigger.on_error = :continue
+  if Vagrant::Util::Platform.platform == 'darwin19' &&
+    config.trigger.before :up do |trigger|
+      trigger.name = "VVV Setup local network before up"
+      trigger.run = {inline: "bash -c 'sudo ifconfig lo0 alias #{vvv_config['vm_config']['private_network_ip']}/24'"}
+    end
+    config.trigger.after :halt do |trigger|
+      trigger.name = 'VVV delete local network after halt'
+      trigger.run = {inline: "bash -c 'sudo ifconfig lo0 inet delete #{vvv_config['vm_config']['private_network_ip']}'"}
+      trigger.on_error = :continue
+    end
+    config.trigger.after :destroy do |trigger|
+      trigger.name = 'VVV delete local network after destroy'
+      trigger.run = {inline: "bash -c 'sudo ifconfig lo0 inet delete #{vvv_config['vm_config']['private_network_ip']}'"}
+      trigger.on_error = :continue
+    end
   end
 
   config.trigger.after :up do |trigger|
