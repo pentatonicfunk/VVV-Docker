@@ -440,7 +440,6 @@ Vagrant.configure('2') do |config|
   config.vm.provider :docker do |d|
     d.image = 'pentatonicfunk/vagrant-ubuntu-base-images:20.04'
     d.has_ssh = true
-    puts "Checking platform: #{Vagrant::Util::Platform.platform} "
     if Vagrant::Util::Platform.platform == 'darwin19'
         # Docker in mac need explicit ports publish to access
         d.ports = [ "#{vvv_config['vm_config']['private_network_ip']}:80:80" ]
