@@ -872,18 +872,18 @@ Vagrant.configure('2') do |config|
     end
   end
 
-  if Vagrant::Util::Platform.platform == 'darwin19' &&
+  if Vagrant::Util::Platform.platform == 'darwin19' && config.vm.provider == 'docker'
     config.trigger.before :up do |trigger|
-      trigger.name = "VVV Setup local network before up"
+      trigger.name = "VVV Setup docker local network before up"
       trigger.run = {inline: "bash -c 'sudo ifconfig lo0 alias #{vvv_config['vm_config']['private_network_ip']}/24'"}
     end
     config.trigger.after :halt do |trigger|
-      trigger.name = 'VVV delete local network after halt'
+      trigger.name = 'VVV delete docker local network after halt'
       trigger.run = {inline: "bash -c 'sudo ifconfig lo0 inet delete #{vvv_config['vm_config']['private_network_ip']}'"}
       trigger.on_error = :continue
     end
     config.trigger.after :destroy do |trigger|
-      trigger.name = 'VVV delete local network after destroy'
+      trigger.name = 'VVV delete docker local network after destroy'
       trigger.run = {inline: "bash -c 'sudo ifconfig lo0 inet delete #{vvv_config['vm_config']['private_network_ip']}'"}
       trigger.on_error = :continue
     end
