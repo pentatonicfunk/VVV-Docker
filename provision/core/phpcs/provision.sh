@@ -26,12 +26,19 @@ function php_codesniff_setup() {
   cd /srv/www/phpcs
   COMPOSER_RUNTIME_ENV="vagrant" composer update --no-ansi --no-progress --no-dev --prefer-dist
 
-  chown -R vagrant:vagrant /srv/www/phpcs
-  chmod -R u+rwX /srv/www/phpcs
-  find /srv/www/phpcs -type f -exec chmod 644 {} \;
-  find /srv/www/phpcs -type d -exec chmod 755 {} \;
-  chmod +x /srv/www/phpcs/bin/*
-  chmod +x /srv/www/phpcs/vendor/squizlabs/php_codesniffer/bin/*
+  if ! stat /srv/www/phpcs | grep -q 'Uid:.*(vagrant)'; then
+    vvv_info " * [PHPCS]: Setting up ownership and permissions of /srv/www/phpcs"
+    # Change ownership recursively, excluding .git folders
+    find /srv/www/phpcs ! -path "*/.git*" -exec chown vagrant:vagrant {} +
+
+    # Change permissions recursively, excluding .git folders
+    find /srv/www/phpcs ! -path "*/.git*" -exec chmod u+rwX {} +
+
+    find /srv/www/phpcs ! -path "*/.git*" -type f -exec chmod 644 {} \;
+    find /srv/www/phpcs ! -path "*/.git*" -type d -exec chmod 755 {} \;
+    chmod +x /srv/www/phpcs/bin/* || vvv_error " ! [PHPCS] chmod -x /srv/www/phpcs/bin/* failed"
+    chmod +x /srv/www/phpcs/vendor/squizlabs/php_codesniffer/bin/* || vvv_error " ! [PHPCS] chmod -x /srv/www/phpcs/vendor/squizlabs/php_codesniffer/bin/* failed"
+  fi
 
   vvv_info " * [PHPCS]: Setting WordPress-Core as the default PHPCodesniffer standard"
 
@@ -41,7 +48,9 @@ function php_codesniff_setup() {
   else
     vvv_error " ! [PHPCS]: Failed to set the default standard to WordPress-Core."
     vvv_error " ! [PHPCS]: Permissions and owners of /src/www/phpcs/bin are as follows:\n$(ls -al /srv/www/phpcs/bin)"
-    vvv_error " ! [PHPCS]: getfacl /srv/www/phpcs/bin/phpcs\n$(getfacl /srv/www/phpcs/bin/phpcs)"
+    if command -v getfacl >/dev/null 2>&1; then
+      vvv_error " ! [PHPCS]: getfacl /srv/www/phpcs/bin/phpcs\n$(getfacl /srv/www/phpcs/bin/phpcs)"
+    fi
   fi
   local standards
   standards=$(noroot php /srv/www/phpcs/bin/phpcs -i)
