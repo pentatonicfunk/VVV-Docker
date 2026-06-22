@@ -26,17 +26,27 @@ function vvv_register_packages() {
     zip
     unzip
     ngrep
-    curl
     make
-    vim
     colordiff
     python3-pip # needed for shyaml
     python3-setuptools
-    lftp
     jq
+    yq
     less
+
+    # Needed for WordPress PDF previews.
+    ghostscript
+
+    # Networking tools
+    lftp
+    curl
+    httpie
     iputils-ping
     net-tools
+
+    # Editors
+    vim
+    neovim
     nano
 
     # ntp service to keep clock current
@@ -54,6 +64,11 @@ function vvv_register_packages() {
     # webp support
     libwebp-dev
     webp
+
+    # Shell tools
+    stow
+    fzf
+    tmux
   )
 }
 vvv_add_hook register_apt_packages vvv_register_packages 0
